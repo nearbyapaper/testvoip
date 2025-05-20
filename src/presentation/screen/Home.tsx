@@ -43,6 +43,10 @@ const HomeScreen = () => {
     ],
   ];
 
+  // useEffect(() => {
+  //   VoipModule.createLocalMediaStream();
+  // }, []);
+
   useEffect(() => {
     if (tel.length <= 3) {
       setFormatTel(tel);
@@ -94,7 +98,13 @@ const HomeScreen = () => {
                 keyPad={keyPad}
                 onPress={() => {
                   if (tel.length === 10) return;
-                  setTel(prevTel => prevTel + keyPad.value);
+                  if (keyPad.key === 'call') {
+                    // setIsCalling(true);
+                    VoipModule.startCall(tel);
+                    VoipModule.callWithNumber(tel);
+                  } else {
+                    setTel(prevTel => prevTel + keyPad.value);
+                  }
                 }}
               />
             ))}

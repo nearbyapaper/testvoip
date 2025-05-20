@@ -10,9 +10,12 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        // for WebRTC
+//        maven { url 'https://webrtc.github.io/webrtc-org/native/android' }
     }
     dependencies {
-        classpath("com.android.tools.build:gradle")
+//        classpath("com.android.tools.build:gradle")
+        classpath("com.android.tools.build:gradle:8.2.2") // specify version
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
     }

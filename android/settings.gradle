@@ -1,4 +1,14 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+pluginManagement {
+    dependencyResolutionManagement {
+        repositories {
+            google()
+            mavenCentral()
+//            maven { url 'https://jitpack.io' }
+//            maven { url 'https://webrtc.github.io/webrtc-org/native-code/android/' } // ✅ เพิ่มที่นี่แทน
+        }
+    }
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+}
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'MyApp'
