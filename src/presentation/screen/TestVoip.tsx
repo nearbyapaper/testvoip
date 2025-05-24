@@ -10,6 +10,7 @@ import {
 import {RTCSessionDescriptionInit} from 'react-native-webrtc/lib/typescript/RTCSessionDescription';
 import RTCIceCandidateInit from 'react-native-webrtc/lib/typescript/RTCIceCandidate';
 import InCallManager from 'react-native-incall-manager';
+import {NativeModules} from 'react-native';
 
 // const SIGNALING_SERVER_URL = 'ws://<YOUR_COMPUTER_LOCAL_IP>:3002'; // Replace with your actual URL
 const SIGNALING_SERVER_URL = 'ws://192.168.0.136:3002'; // Replace with your actual URL
@@ -26,6 +27,11 @@ const TestVoip = () => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState('Idle');
+  const [isMuted, setIsMuted] = useState(false);
+
+  const {VoipModule} = NativeModules;
+
+  console.log('VoipModule:', VoipModule);
 
   useEffect(() => {
     requestPermissions();
@@ -34,8 +40,10 @@ const TestVoip = () => {
     // requestPermissions().then(() => initSocket());
 
     InCallManager.start({media: 'audio'});
-    InCallManager.setForceSpeakerphoneOn(false); // ลองใช้ false ถ้าเสียงหวีด
-    InCallManager.setSpeakerphoneOn(false); // อาจลอง false เช่นกัน
+    // InCallManager.setForceSpeakerphoneOn(true); // ลองใช้ false ถ้าเสียงหวีด
+    InCallManager.setSpeakerphoneOn(true); // อาจลอง false เช่นกัน
+    // use Native Module for setSpeakerOn
+    VoipModule.setSpeakerOn(true); // เปิดลำโพง
 
     // Clean up function to disconnect socket and close peer connection
     return () => {
@@ -48,6 +56,21 @@ const TestVoip = () => {
       InCallManager.stop();
     };
   }, []);
+
+  const toggleMute = () => {
+    if (!localStream) {
+      return;
+    }
+
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+
+    const muted = !localStream.getAudioTracks()[0].enabled;
+    setIsMuted(muted);
+
+    console.log(muted ? '🔇 Muted' : '🎙️ Unmuted');
+  };
 
   const requestPermissions = async () => {
     const permissions = [
@@ -70,6 +93,8 @@ const TestVoip = () => {
             echoCancellation: true, // ป้องกันเสียงสะท้อน
             noiseSuppression: true, // ลดเสียงรบกวน
             autoGainControl: true,
+            channelCount: 1, // ลดการแปรผันเสียง
+            sampleRate: 16000, // 16kHz เหมาะกับ VoIP มากกว่า 44100
           },
           // audio: {
           //   echoCancellation: true,
@@ -109,6 +134,8 @@ const TestVoip = () => {
 
     peerConnection.current.ontrack = event => {
       // เมื่อมีเสียง/วิดีโอเข้ามา ให้เพิ่มเข้า remote stream
+      InCallManager.setSpeakerphoneOn(true); // ป้องกันเสียงย้อนเข้าหูฟัง
+      VoipModule.setSpeakerOn(true); // เปิดลำโพง
       console.log('🎤 ontrack: track received', event.track.kind);
       // event.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
       //   console.log('🎙️ Adding track', track.kind);
@@ -222,11 +249,14 @@ const TestVoip = () => {
       try {
         console.log('InCallManager:', InCallManager);
 
+        VoipModule.setSpeakerOn(true); // เปิดลำโพง
+
         if (InCallManager && typeof InCallManager.start === 'function') {
           InCallManager.start({media: 'audio'});
           // InCallManager.setSpeakerphoneOn(true); // ป้องกันเสียงย้อนเข้าหูฟัง} else {
           setTimeout(() => {
             InCallManager.setSpeakerphoneOn(true);
+            VoipModule.setSpeakerOn(true); // เปิดลำโพง
           }, 1000);
           console.warn(
             '⚠️ InCallManager not available or not initialized properly',
@@ -245,6 +275,8 @@ const TestVoip = () => {
       }
 
       // create offer
+      InCallManager.setSpeakerphoneOn(true);
+      VoipModule.setSpeakerOn(true); // เปิดลำโพง
       const offer = await peerConnection.current?.createOffer(); // สร้าง offer
       await peerConnection.current?.setLocalDescription(offer); // ตั้ง localDescription
       console.log('📨 Sent offer:', offer.sdp);
@@ -261,6 +293,7 @@ const TestVoip = () => {
         try {
           InCallManager.start({media: 'audio'});
           InCallManager.setSpeakerphoneOn(true); // ป้องกันเสียงย้อนเข้าหูฟัง
+          VoipModule.setSpeakerOn(true); // เปิดลำโพง
         } catch (e) {
           console.error('⚠️ InCallManager failed to start', e);
         }
@@ -332,6 +365,7 @@ const TestVoip = () => {
         <Text style={{color: 'gray'}}>Waiting for remote audio...</Text>
       )}
       <Button title="Call" onPress={initSocket} />
+      <Button title={isMuted ? 'Unmute' : 'Mute'} onPress={toggleMute} />
     </View>
   );
 };

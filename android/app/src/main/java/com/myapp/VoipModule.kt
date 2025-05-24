@@ -1,5 +1,7 @@
 package com.myapp
 
+import android.content.Context
+import android.media.AudioManager
 import android.util.Log
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -65,5 +67,26 @@ class VoipModule(private val reactContext: ReactApplicationContext): ReactContex
     fun callWithNumber(number: String){
         // TODO: Integrate signaling and start PeerConnection
         Log.d("VoipModule", "Calling user: $number")
+    }
+
+    @ReactMethod
+    fun setSpeakerOn(enable: Boolean){
+        Log.d("VoipModule", "setSpeakerOn: $enable")
+        val audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.mode= AudioManager.MODE_IN_COMMUNICATION
+        audioManager.isSpeakerphoneOn=enable
+    }
+
+    @ReactMethod
+    fun enableSpeaker(enable: Boolean){
+        Log.d("VoipModule", "enableSpeakerIfNeeded: $enable")
+        val audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val isWiredHeadsetOn = audioManager.isWiredHeadsetOn
+        val isBluetoothOn = audioManager.isBluetoothScoOn
+
+        if (!isWiredHeadsetOn || !isBluetoothOn) {
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            audioManager.isSpeakerphoneOn = enable
+        }
     }
 }
